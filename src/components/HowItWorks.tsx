@@ -174,18 +174,6 @@ export const HowItWorks: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Card Bottom: Handcrafted Ticket Footnote & Interaction */}
-                <div className="pt-4 border-t border-dashed border-amber-200/80 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5 text-amber-800 font-bold text-[11px]">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    <span>{step.actionHint}</span>
-                  </div>
-
-                  <div className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-amber-900 group-hover:bg-amber-500 group-hover:text-white transition-colors shadow-xs">
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                </div>
-
               </motion.div>
             );
           })}
