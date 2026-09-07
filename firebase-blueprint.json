@@ -1,0 +1,141 @@
+{
+  "entities": {
+    "Booking": {
+      "title": "Booking",
+      "description": "Hotel room reservation with cash on arrival / pay at hotel verification",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "User identifier who booked"
+        },
+        "userEmail": {
+          "type": "string",
+          "description": "User contact email"
+        },
+        "guestName": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Primary guest full name"
+        },
+        "guestPhone": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "Contact phone number for confirmation"
+        },
+        "roomId": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Identifier of the reserved room"
+        },
+        "roomTitle": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Name of the room or suite"
+        },
+        "roomType": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Category of the room"
+        },
+        "roomImage": {
+          "type": "string",
+          "description": "URL thumbnail of the room"
+        },
+        "checkIn": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "Check-in date"
+        },
+        "checkOut": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "Check-out date"
+        },
+        "nights": {
+          "type": "number",
+          "description": "Total number of stay nights"
+        },
+        "guestsCount": {
+          "type": "number",
+          "description": "Number of guests"
+        },
+        "specialRequests": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Optional preferences or requests"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["pay_on_arrival", "cash_at_hotel"],
+          "description": "Guaranteed pay at hotel upon check in"
+        },
+        "totalPrice": {
+          "type": "number",
+          "description": "Total price due at front desk"
+        },
+        "currency": {
+          "type": "string",
+          "maxLength": 10,
+          "description": "Currency code e.g. USD"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["confirmed", "cancelled", "completed"],
+          "description": "Reservation status"
+        },
+        "bookingReference": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Human-readable voucher reference number"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        }
+      },
+      "required": [
+        "userId",
+        "guestName",
+        "guestPhone",
+        "roomId",
+        "checkIn",
+        "checkOut",
+        "totalPrice",
+        "status",
+        "bookingReference"
+      ]
+    },
+    "Favorite": {
+      "title": "Favorite",
+      "description": "Saved favorite room for quick access",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "User identifier who favorited"
+        },
+        "roomId": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Room identifier"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp"
+        }
+      },
+      "required": ["userId", "roomId"]
+    }
+  },
+  "firestore": {
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Guest reservations with pay at check-in"
+    },
+    "/favorites/{favoriteId}": {
+      "schema": "Favorite",
+      "description": "User saved favorites"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Antix Hotel",
+  "description": "Luxury hotel room booking website with pay-on-arrival reservation, interactive room showcase, and guest booking management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

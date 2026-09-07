@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidBooking(data) {
+      return data.userId is string &&
+             data.userId.size() <= 128 &&
+             data.guestName is string &&
+             data.guestName.size() > 0 &&
+             data.guestName.size() <= 100 &&
+             data.guestPhone is string &&
+             data.guestPhone.size() > 0 &&
+             data.guestPhone.size() <= 30 &&
+             data.roomId is string &&
+             data.roomId.size() <= 50 &&
+             data.checkIn is string &&
+             data.checkIn.size() <= 30 &&
+             data.checkOut is string &&
+             data.checkOut.size() <= 30 &&
+             data.totalPrice is number &&
+             data.totalPrice >= 0 &&
+             data.status in ['confirmed', 'cancelled', 'completed'] &&
+             data.bookingReference is string &&
+             data.bookingReference.size() <= 50;
+    }
+
+    // Connectivity test collection
+    match /test/{docId} {
+      allow get: if true;
+    }
+
+    // Bookings collection
+    match /bookings/{bookingId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() &&
+                    incoming().userId == request.auth.uid &&
+                    isValidBooking(incoming());
+      allow update: if isSignedIn() &&
+                    resource.data.userId == request.auth.uid &&
+                    incoming().userId == request.auth.uid &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['status']) &&
+                    incoming().status in ['confirmed', 'cancelled'];
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Favorites collection
+    match /favorites/{favoriteId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() &&
+                    incoming().userId == request.auth.uid &&
+                    incoming().roomId is string &&
+                    incoming().roomId.size() <= 50;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+  }
+}
