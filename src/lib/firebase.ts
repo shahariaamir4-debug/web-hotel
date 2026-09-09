@@ -38,12 +38,11 @@ export async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn("Firestore offline or connecting: please check Firebase configuration.");
-    }
+    // Non-blocking: Silently handle or log warning, prevent any top-level crash on external hosts
+    console.warn("Firestore connection check info:", error instanceof Error ? error.message : error);
   }
 }
-testConnection();
+testConnection().catch(() => {});
 
 export enum OperationType {
   CREATE = 'create',
