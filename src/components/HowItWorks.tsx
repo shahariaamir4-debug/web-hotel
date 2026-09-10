@@ -243,7 +243,7 @@ export const HowItWorks: React.FC = () => {
       {/* Decorative Wave Divider ("Dheo") transitioning from Forest Green to White */}
       <WaveDivider
         variant="forest-to-white"
-        height={95}
+        height={120}
         className="text-white"
       />
     </div>

@@ -22,6 +22,7 @@ export const BookingModal: React.FC = () => {
     setBookingRoom, 
     createBooking, 
     setActiveVoucher,
+    searchFilters,
     user 
   } = useHotel();
 
@@ -32,9 +33,9 @@ export const BookingModal: React.FC = () => {
     return d.toISOString().split('T')[0];
   };
 
-  const [checkIn, setCheckIn] = useState(() => getTodayPlusDays(1));
-  const [checkOut, setCheckOut] = useState(() => getTodayPlusDays(3));
-  const [guestsCount, setGuestsCount] = useState(2);
+  const [checkIn, setCheckIn] = useState(() => searchFilters.checkIn || getTodayPlusDays(1));
+  const [checkOut, setCheckOut] = useState(() => searchFilters.checkOut || getTodayPlusDays(3));
+  const [guestsCount, setGuestsCount] = useState(() => searchFilters.guests || 2);
   const [guestName, setGuestName] = useState(user?.displayName || '');
   const [guestPhone, setGuestPhone] = useState('');
   const [guestEmail, setGuestEmail] = useState(user?.email || '');
@@ -42,6 +43,21 @@ export const BookingModal: React.FC = () => {
   const [arrivalTime, setArrivalTime] = useState('2:00 PM - 4:00 PM');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Sync with search filters when booking room is selected
+  React.useEffect(() => {
+    if (bookingRoom) {
+      if (searchFilters.checkIn) {
+        setCheckIn(searchFilters.checkIn);
+      }
+      if (searchFilters.checkOut) {
+        setCheckOut(searchFilters.checkOut);
+      }
+      if (searchFilters.guests) {
+        setGuestsCount(searchFilters.guests);
+      }
+    }
+  }, [bookingRoom, searchFilters.checkIn, searchFilters.checkOut, searchFilters.guests]);
 
   if (!bookingRoom) return null;
 

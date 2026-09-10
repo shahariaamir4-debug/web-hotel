@@ -263,14 +263,19 @@ export const HotelProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
     if (searchFilters.roomType !== 'all') {
-      if (room.category !== searchFilters.roomType) {
+      // Group 'ocean' (Azure Lagoon) and 'villa' under 'villa' category tab
+      if (searchFilters.roomType === 'villa') {
+        if (room.category !== 'villa' && room.category !== 'ocean') {
+          return false;
+        }
+      } else if (room.category !== searchFilters.roomType) {
         return false;
       }
     }
     if (searchFilters.priceRange !== 'all') {
       if (searchFilters.priceRange === 'under300' && room.pricePerNight >= 300) return false;
       if (searchFilters.priceRange === '300to500' && (room.pricePerNight < 300 || room.pricePerNight > 500)) return false;
-      if (searchFilters.priceRange === 'above500' && room.pricePerNight <= 500) return false;
+      if ((searchFilters.priceRange === 'above500' || searchFilters.priceRange === '500plus') && room.pricePerNight <= 500) return false;
     }
     if (searchFilters.guests && room.maxGuests < searchFilters.guests) {
       return false;

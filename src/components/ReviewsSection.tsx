@@ -44,21 +44,14 @@ export const ReviewsSection: React.FC = () => {
               <div>
                 {/* Guest Profile Row */}
                 <div className="flex items-center justify-between gap-3 mb-5">
-                  <div className="flex items-center gap-3.5">
-                    <img
-                      src={review.avatar}
-                      alt={review.name}
-                      className="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500/40 shadow-sm"
-                    />
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900">
-                        {review.name}
-                      </h4>
-                      <div className="flex items-center gap-0.5 mt-0.5">
-                        {[...Array(review.rating)].map((_, i) => (
-                          <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        ))}
-                      </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">
+                      {review.name}
+                    </h4>
+                    <div className="flex items-center gap-0.5 mt-1">
+                      {[...Array(review.rating)].map((_, i) => (
+                        <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      ))}
                     </div>
                   </div>
                   <Quote className="w-6 h-6 text-emerald-300/60 shrink-0" />
@@ -84,7 +77,7 @@ export const ReviewsSection: React.FC = () => {
       {/* Decorative Wave Divider ("Dheo") leading into CTA Banner (Forest Green) */}
       <WaveDivider
         variant="white-to-forest"
-        height={95}
+        height={120}
         className="text-[#072d20]"
       />
     </div>

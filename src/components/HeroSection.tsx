@@ -4,9 +4,9 @@ import {
   ArrowRight,
   Star,
   Banknote,
-  ShieldCheck
+  ShieldCheck,
+  ChevronDown
 } from 'lucide-react';
-import { WaveDivider } from './WaveDivider';
 
 export const HeroSection: React.FC = () => {
   const scrollToRooms = () => {
@@ -17,7 +17,7 @@ export const HeroSection: React.FC = () => {
   return (
     <section 
       id="hero" 
-      className="relative min-h-[85vh] sm:min-h-[90vh] w-full flex flex-col justify-between overflow-hidden"
+      className="relative h-screen h-[100dvh] w-full flex flex-col justify-center overflow-hidden"
     >
       {/* 
         ========================================================================
@@ -40,10 +40,10 @@ export const HeroSection: React.FC = () => {
 
       {/* 
         ========================================================================
-        2. CLEAN HERO CONTENT OVERLAID DIRECTLY ON BACKGROUND
+        2. CLEAN HERO CONTENT OVERLAID DIRECTLY ON BACKGROUND (FULL SCREEN CENTERED)
         ========================================================================
       */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-32 sm:pt-40 pb-16 flex-1 flex flex-col justify-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-28 sm:pt-36 pb-6 flex-1 flex flex-col justify-center">
         
         <div className="max-w-3xl">
           
@@ -108,19 +108,26 @@ export const HeroSection: React.FC = () => {
 
         </div>
 
-      </div>
+        {/* Floating Scroll Indicator for Full-Screen Experience */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
+          className="mt-8 flex items-center gap-2 text-emerald-300/80 cursor-pointer w-fit group"
+          onClick={scrollToRooms}
+        >
+          <motion.div
+            animate={{ y: [0, 5, 0] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm border border-emerald-400/30 flex items-center justify-center text-emerald-300 group-hover:border-emerald-400 transition-colors shadow-lg"
+          >
+            <ChevronDown className="w-4 h-4" />
+          </motion.div>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-slate-300 group-hover:text-white transition-colors">
+            Scroll to explore
+          </span>
+        </motion.div>
 
-      {/* 
-        ========================================================================
-        3. LUMINOUS WAVE DIVIDER TRANSITIONING HERO TO WHITE SECTION
-        ========================================================================
-      */}
-      <div className="relative z-10 w-full mt-auto">
-        <WaveDivider
-          variant="dark-to-white"
-          height={95}
-          className="text-white"
-        />
       </div>
 
     </section>

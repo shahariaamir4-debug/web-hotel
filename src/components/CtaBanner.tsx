@@ -61,7 +61,7 @@ export const CtaBanner: React.FC = () => {
       {/* Decorative Wave Divider ("Dheo") leading into the Dark Footer */}
       <WaveDivider
         variant="forest-to-dark"
-        height={90}
+        height={115}
         className="text-[#03150f]"
       />
     </div>

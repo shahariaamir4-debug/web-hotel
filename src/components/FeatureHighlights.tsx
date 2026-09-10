@@ -45,8 +45,18 @@ const FEATURES = [
 
 export const FeatureHighlights: React.FC = () => {
   return (
-    <div className="bg-white text-slate-900 pt-10 pb-0 overflow-hidden">
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="relative overflow-hidden">
+      {/* Top Figma Vector Art Wave Divider transitioning smoothly from dark hero into clean white */}
+      <div className="bg-[#03150f] -mt-0.5">
+        <WaveDivider
+          variant="dark-to-white"
+          height={120}
+          className="text-white"
+        />
+      </div>
+
+      <div className="bg-white text-slate-900 pt-6 pb-0">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         
         {/* Section Header with Reveal Animation */}
         <motion.div 
@@ -127,9 +137,10 @@ export const FeatureHighlights: React.FC = () => {
       {/* Decorative Wave Divider ("Dheo") transitioning from White to Forest Green */}
       <WaveDivider
         variant="white-to-forest"
-        height={95}
+        height={120}
         className="text-[#072d20]"
       />
+      </div>
     </div>
   );
 };

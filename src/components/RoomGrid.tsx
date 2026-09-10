@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Bed, 
@@ -7,60 +7,182 @@ import {
   Users, 
   Heart, 
   ArrowRight, 
-  Star, 
   Sparkles, 
   Banknote,
   Eye,
-  CheckCircle2,
-  Search,
-  MapPin,
-  Hotel,
-  RotateCcw
+  RotateCcw,
+  SlidersHorizontal,
+  ArrowUpDown
 } from 'lucide-react';
 import { useHotel } from '../context/HotelContext';
-import { Room, RoomCategory } from '../types';
+import { Room } from '../types';
 import { WaveDivider } from './WaveDivider';
-
-const CATEGORIES: { id: RoomCategory; label: string }[] = [
-  { id: 'all', label: 'All Suites & Rooms' },
-  { id: 'villa', label: 'Ocean Villas' },
-  { id: 'deluxe', label: 'Deluxe Suites' },
-  { id: 'presidential', label: 'Presidential' },
-  { id: 'penthouse', label: 'Penthouses' },
-];
 
 export const RoomGrid: React.FC = () => {
   const { 
-    filteredRooms, 
+    rooms,
     favorites, 
     toggleFavorite, 
     setSelectedRoom, 
-    setBookingRoom,
-    searchFilters,
-    setSearchFilters
+    setBookingRoom
   } = useHotel();
 
-  const [activeCategory, setActiveCategory] = useState<RoomCategory>('all');
+  // 1. Dynamic price boundary & tier calculation derived automatically from active room inventory
+  const { minBound, maxBound, stepSize, priceTiers, lowestActualPrice, highestActualPrice } = useMemo(() => {
+    if (!rooms || rooms.length === 0) {
+      return {
+        minBound: 100,
+        maxBound: 1000,
+        stepSize: 10,
+        priceTiers: [],
+        lowestActualPrice: 100,
+        highestActualPrice: 1000,
+      };
+    }
 
-  const handleCategoryChange = (cat: RoomCategory) => {
-    setActiveCategory(cat);
-    setSearchFilters(prev => ({
-      ...prev,
-      roomType: cat === 'all' ? 'all' : cat
-    }));
+    const prices = rooms.map(r => r.pricePerNight);
+    const rawMin = Math.min(...prices);
+    const rawMax = Math.max(...prices);
+    const spread = Math.max(1, rawMax - rawMin);
+
+    // Auto-scale rounding unit according to the price scale magnitude
+    const unit = spread > 1500 ? 100 : spread > 400 ? 50 : spread > 100 ? 25 : 10;
+    
+    // Auto-compute boundaries rounded to nearest clean step
+    const minBound = Math.max(0, Math.floor(rawMin / unit) * unit);
+    const maxBound = Math.ceil(rawMax / unit) * unit;
+    const stepSize = Math.max(5, Math.round(unit / 5));
+
+    // Dynamic statistical tiers generated automatically from actual price distribution
+    const tiers: Array<{ id: string; label: string; min: number; max: number; count: number }> = [
+      {
+        id: 'all',
+        label: 'All Rates',
+        min: minBound,
+        max: maxBound,
+        count: rooms.length,
+      }
+    ];
+
+    if (spread >= 60) {
+      const tier1Threshold = Math.round((rawMin + spread * 0.35) / unit) * unit;
+      const tier2Threshold = Math.round((rawMin + spread * 0.70) / unit) * unit;
+
+      const budgetRooms = rooms.filter(r => r.pricePerNight < tier1Threshold);
+      const midRooms = rooms.filter(r => r.pricePerNight >= tier1Threshold && r.pricePerNight <= tier2Threshold);
+      const luxuryRooms = rooms.filter(r => r.pricePerNight > tier2Threshold);
+
+      if (budgetRooms.length > 0) {
+        tiers.push({
+          id: 'budget',
+          label: `Economy (< $${tier1Threshold})`,
+          min: minBound,
+          max: tier1Threshold - 1,
+          count: budgetRooms.length,
+        });
+      }
+
+      if (midRooms.length > 0) {
+        tiers.push({
+          id: 'mid',
+          label: `Mid-Tier ($${tier1Threshold} – $${tier2Threshold})`,
+          min: tier1Threshold,
+          max: tier2Threshold,
+          count: midRooms.length,
+        });
+      }
+
+      if (luxuryRooms.length > 0) {
+        tiers.push({
+          id: 'luxury',
+          label: `Luxury ($${tier2Threshold}+)`,
+          min: tier2Threshold,
+          max: maxBound,
+          count: luxuryRooms.length,
+        });
+      }
+    }
+
+    return {
+      minBound,
+      maxBound,
+      stepSize,
+      priceTiers: tiers,
+      lowestActualPrice: rawMin,
+      highestActualPrice: rawMax,
+    };
+  }, [rooms]);
+
+  // Selected range state (null indicates default auto-calibrated boundaries)
+  const [customMin, setCustomMin] = useState<number | null>(null);
+  const [customMax, setCustomMax] = useState<number | null>(null);
+  const [activeTierId, setActiveTierId] = useState<string>('all');
+  const [sortByPrice, setSortByPrice] = useState<'default' | 'asc' | 'desc'>('default');
+
+  const effectiveMin = customMin !== null ? Math.max(minBound, customMin) : minBound;
+  const effectiveMax = customMax !== null ? Math.min(maxBound, customMax) : maxBound;
+
+  const isFilterActive = (customMin !== null && customMin > minBound) || 
+                         (customMax !== null && customMax < maxBound) || 
+                         activeTierId !== 'all';
+
+  const handleSelectTier = (tier: { id: string; min: number; max: number }) => {
+    setActiveTierId(tier.id);
+    if (tier.id === 'all') {
+      setCustomMin(null);
+      setCustomMax(null);
+    } else {
+      setCustomMin(tier.min);
+      setCustomMax(tier.max);
+    }
   };
 
-  const handleResetFilters = () => {
-    setActiveCategory('all');
-    setSearchFilters({
-      location: 'all',
-      roomType: 'all',
-      checkIn: '',
-      checkOut: '',
-      priceRange: 'all',
-      guests: 2
+  const handleSliderChange = (newMax: number) => {
+    setActiveTierId('custom');
+    setCustomMax(newMax);
+  };
+
+  const handleMinInputChange = (val: string) => {
+    setActiveTierId('custom');
+    const num = parseInt(val, 10);
+    if (isNaN(num)) {
+      setCustomMin(minBound);
+    } else {
+      setCustomMin(Math.max(minBound, Math.min(num, effectiveMax)));
+    }
+  };
+
+  const handleMaxInputChange = (val: string) => {
+    setActiveTierId('custom');
+    const num = parseInt(val, 10);
+    if (isNaN(num)) {
+      setCustomMax(maxBound);
+    } else {
+      setCustomMax(Math.min(maxBound, Math.max(num, effectiveMin)));
+    }
+  };
+
+  const handleResetFilter = () => {
+    setActiveTierId('all');
+    setCustomMin(null);
+    setCustomMax(null);
+    setSortByPrice('default');
+  };
+
+  // Pure dynamic price filtering & sorting
+  const finalProcessedRooms = useMemo(() => {
+    let list = rooms.filter(room => {
+      return room.pricePerNight >= effectiveMin && room.pricePerNight <= effectiveMax;
     });
-  };
+
+    if (sortByPrice === 'asc') {
+      list = [...list].sort((a, b) => a.pricePerNight - b.pricePerNight);
+    } else if (sortByPrice === 'desc') {
+      list = [...list].sort((a, b) => b.pricePerNight - a.pricePerNight);
+    }
+
+    return list;
+  }, [rooms, effectiveMin, effectiveMax, sortByPrice]);
 
   return (
     <div className="bg-white text-slate-900 pt-6 pb-0 overflow-hidden">
@@ -88,7 +210,7 @@ export const RoomGrid: React.FC = () => {
           </div>
 
           <button
-            onClick={() => handleCategoryChange('all')}
+            onClick={handleResetFilter}
             className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-700 hover:text-emerald-900 transition-colors cursor-pointer w-fit group"
           >
             <span>View All Sanctuaries</span>
@@ -98,177 +220,180 @@ export const RoomGrid: React.FC = () => {
 
         {/* 
           ========================================================================
-          HOTEL SEARCH & FILTER CONSOLE (TRANSFERRED TO BOOKING / ROOMS SECTION)
+          PRICE FILTER ONLY (CLEAN & MINIMALIST)
           ========================================================================
         */}
         <motion.div
-          initial={{ opacity: 0, y: 25 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mb-10 bg-gradient-to-r from-emerald-950 via-[#072d20] to-emerald-950 p-4 sm:p-6 rounded-3xl text-white shadow-xl border border-emerald-800/60"
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-emerald-800/50">
-            <div className="flex items-center gap-2 text-emerald-300 font-bold text-xs uppercase tracking-wider">
-              <Search className="w-4 h-4 text-emerald-400" />
-              <span>Filter Available Rooms & Rates</span>
-            </div>
-            <button
-              onClick={handleResetFilters}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer w-fit"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset Filters</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {/* Location / Wing */}
-            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-[#041c14] border border-emerald-800/70 hover:border-emerald-500 transition-colors">
-              <MapPin className="w-5 h-5 text-emerald-400 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <label className="block text-[10px] font-extrabold uppercase tracking-wider text-emerald-300/80">
-                  Resort Wing
-                </label>
-                <select
-                  id="filter-location"
-                  value={searchFilters.location}
-                  onChange={(e) => setSearchFilters(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full bg-transparent text-xs font-bold text-white focus:outline-hidden cursor-pointer"
-                >
-                  <option value="all" className="bg-slate-900 text-white">All Resort Wings</option>
-                  <option value="ocean" className="bg-slate-900 text-white">Oceanfront Wing</option>
-                  <option value="skyline" className="bg-slate-900 text-white">Skyline Tower</option>
-                  <option value="lagoon" className="bg-slate-900 text-white">Lagoon Cabana Area</option>
-                  <option value="presidential" className="bg-slate-900 text-white">Presidential Garden</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Room Category */}
-            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-[#041c14] border border-emerald-800/70 hover:border-emerald-500 transition-colors">
-              <Hotel className="w-5 h-5 text-emerald-400 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <label className="block text-[10px] font-extrabold uppercase tracking-wider text-emerald-300/80">
-                  Category
-                </label>
-                <select
-                  id="filter-room-type"
-                  value={searchFilters.roomType}
-                  onChange={(e) => {
-                    const val = e.target.value as any;
-                    setSearchFilters(prev => ({ ...prev, roomType: val }));
-                    setActiveCategory(val === 'all' ? 'all' : val);
-                  }}
-                  className="w-full bg-transparent text-xs font-bold text-white focus:outline-hidden cursor-pointer"
-                >
-                  <option value="all" className="bg-slate-900 text-white">All Suites & Villas</option>
-                  <option value="villa" className="bg-slate-900 text-white">Ocean Villa</option>
-                  <option value="deluxe" className="bg-slate-900 text-white">Deluxe Suite</option>
-                  <option value="presidential" className="bg-slate-900 text-white">Presidential Suite</option>
-                  <option value="penthouse" className="bg-slate-900 text-white">Skyline Penthouse</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Nightly Rate */}
-            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-[#041c14] border border-emerald-800/70 hover:border-emerald-500 transition-colors">
-              <Banknote className="w-5 h-5 text-emerald-400 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <label className="block text-[10px] font-extrabold uppercase tracking-wider text-emerald-300/80">
-                  Nightly Rate
-                </label>
-                <select
-                  id="filter-price-range"
-                  value={searchFilters.priceRange}
-                  onChange={(e) => setSearchFilters(prev => ({ ...prev, priceRange: e.target.value }))}
-                  className="w-full bg-transparent text-xs font-bold text-white focus:outline-hidden cursor-pointer"
-                >
-                  <option value="all" className="bg-slate-900 text-white">Any Price Range</option>
-                  <option value="under300" className="bg-slate-900 text-white">Under $300 / night</option>
-                  <option value="300to500" className="bg-slate-900 text-white">$300 – $500 / night</option>
-                  <option value="500plus" className="bg-slate-900 text-white">$500+ / Luxury Exclusive</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Guests Count */}
-            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-[#041c14] border border-emerald-800/70 hover:border-emerald-500 transition-colors">
-              <Users className="w-5 h-5 text-emerald-400 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <label className="block text-[10px] font-extrabold uppercase tracking-wider text-emerald-300/80">
-                  Guests
-                </label>
-                <select
-                  id="filter-guests"
-                  value={searchFilters.guests}
-                  onChange={(e) => setSearchFilters(prev => ({ ...prev, guests: Number(e.target.value) }))}
-                  className="w-full bg-transparent text-xs font-bold text-white focus:outline-hidden cursor-pointer"
-                >
-                  <option value={1} className="bg-slate-900 text-white">1 Guest</option>
-                  <option value={2} className="bg-slate-900 text-white">2 Guests (Standard)</option>
-                  <option value={3} className="bg-slate-900 text-white">3 Guests</option>
-                  <option value={4} className="bg-slate-900 text-white">4+ Guests (Suite / Villa)</option>
-                </select>
-              </div>
-            </div>
-
-          </div>
-        </motion.div>
-
-        {/* Category Filter Tabs with Reveal Animation */}
-        <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.6, delay: 0.15 }}
-          className="flex items-center gap-2 overflow-x-auto pb-4 mb-10 no-scrollbar"
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="mb-10 bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow"
         >
-          {CATEGORIES.map((cat) => {
-            const isActive = activeCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => handleCategoryChange(cat.id)}
-                className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-emerald-700 text-white shadow-lg shadow-emerald-700/20 border border-emerald-600 scale-105'
-                    : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200/80 border border-slate-200'
-                }`}
-              >
-                {cat.label}
-              </button>
-            );
-          })}
+          {/* Header Row */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
+                <Banknote className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                  <span>Filter by Nightly Rate</span>
+                  {isFilterActive && (
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                      Active Filter
+                    </span>
+                  )}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Resort inventory rates auto-calibrated from <strong className="text-slate-700 font-bold">${lowestActualPrice}</strong> to <strong className="text-slate-700 font-bold">${highestActualPrice}</strong> / night
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+              {/* Sort selector */}
+              <div className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 font-bold">
+                <ArrowUpDown className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <select
+                  value={sortByPrice}
+                  onChange={(e) => setSortByPrice(e.target.value as 'default' | 'asc' | 'desc')}
+                  className="bg-transparent text-xs font-bold text-slate-700 focus:outline-hidden cursor-pointer"
+                  title="Sort suites by price"
+                >
+                  <option value="default">Sort: Recommended</option>
+                  <option value="asc">Price: Low to High</option>
+                  <option value="desc">Price: High to Low</option>
+                </select>
+              </div>
+
+              <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl">
+                Showing <strong className="text-emerald-700 font-extrabold">{finalProcessedRooms.length}</strong> of {rooms.length} Suites
+              </span>
+
+              {(isFilterActive || sortByPrice !== 'default') && (
+                <button
+                  onClick={handleResetFilter}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-emerald-700 transition-colors bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl cursor-pointer"
+                  title="Reset price filter"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Dynamic Auto-Calibrated Statistical Presets */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {priceTiers.map((tier) => {
+              const isSelected = activeTierId === tier.id;
+              return (
+                <button
+                  key={tier.id}
+                  type="button"
+                  onClick={() => handleSelectTier(tier)}
+                  className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-emerald-700 text-white shadow-md shadow-emerald-700/20 scale-102 font-extrabold'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900'
+                  }`}
+                >
+                  <span>{tier.label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+                  }`}>
+                    {tier.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Slider and Custom Range Controls */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center bg-slate-50 border border-slate-200/80 rounded-2xl p-4">
+            {/* Slider Column */}
+            <div className="lg:col-span-7">
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-600" />
+                  Max Nightly Budget:
+                </span>
+                <span className="font-extrabold text-emerald-700 text-sm">
+                  ${effectiveMax} / night
+                </span>
+              </div>
+              <input
+                type="range"
+                min={minBound}
+                max={maxBound}
+                step={stepSize}
+                value={effectiveMax}
+                onChange={(e) => handleSliderChange(Number(e.target.value))}
+                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+              />
+              <div className="flex justify-between text-[11px] font-semibold text-slate-400 mt-1">
+                <span>${minBound} min</span>
+                <span>${Math.round((minBound + maxBound) / 2)}</span>
+                <span>${maxBound} max</span>
+              </div>
+            </div>
+
+            {/* Custom Min / Max Direct Inputs */}
+            <div className="lg:col-span-5 flex flex-wrap sm:flex-nowrap items-center justify-start lg:justify-end gap-2 text-xs">
+              <span className="font-bold text-slate-500 text-[11px]">Range:</span>
+              <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-2xs">
+                <span className="text-slate-400 font-bold">$</span>
+                <input
+                  type="number"
+                  min={minBound}
+                  max={effectiveMax}
+                  step={stepSize}
+                  value={customMin ?? ''}
+                  placeholder={minBound.toString()}
+                  onChange={(e) => handleMinInputChange(e.target.value)}
+                  className="w-14 text-xs font-bold text-slate-800 focus:outline-hidden"
+                  title="Min budget"
+                />
+              </div>
+              <span className="text-slate-400 font-bold">–</span>
+              <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-2xs">
+                <span className="text-slate-400 font-bold">$</span>
+                <input
+                  type="number"
+                  min={effectiveMin}
+                  max={maxBound}
+                  step={stepSize}
+                  value={customMax ?? ''}
+                  placeholder={maxBound.toString()}
+                  onChange={(e) => handleMaxInputChange(e.target.value)}
+                  className="w-14 text-xs font-bold text-slate-800 focus:outline-hidden"
+                  title="Max budget"
+                />
+              </div>
+              <span className="text-[11px] text-slate-500 font-medium">/ night</span>
+            </div>
+          </div>
         </motion.div>
 
         {/* Rooms Grid */}
-        {filteredRooms.length === 0 ? (
+        {finalProcessedRooms.length === 0 ? (
           <div className="text-center py-16 bg-slate-50 rounded-3xl border border-dashed border-slate-300 p-8">
             <p className="text-base text-slate-700 font-semibold">
-              No suites found matching your search filters.
+              No suites found within the selected price range.
             </p>
             <button
-              onClick={() => {
-                setActiveCategory('all');
-                setSearchFilters({
-                  location: 'all',
-                  roomType: 'all',
-                  checkIn: '',
-                  checkOut: '',
-                  priceRange: 'all',
-                  guests: 2
-                });
-              }}
-              className="mt-4 px-6 py-2.5 rounded-xl bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-600 transition-colors cursor-pointer shadow-md"
+              onClick={handleResetFilter}
+              className="mt-4 px-6 py-2.5 rounded-xl bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-600 transition-colors cursor-pointer shadow-md inline-flex items-center gap-2"
             >
-              Reset All Filters
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Price Filter</span>
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <AnimatePresence>
-              {filteredRooms.map((room, idx) => {
+              {finalProcessedRooms.map((room, idx) => {
                 const isFav = favorites.includes(room.id);
                 return (
                   <motion.div
@@ -325,16 +450,11 @@ export const RoomGrid: React.FC = () => {
                     <div className="p-6 flex-1 flex flex-col justify-between">
                       
                       <div>
-                        {/* Rating & Location */}
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <div className="text-xs font-bold text-emerald-800 uppercase tracking-wider truncate">
+                        {/* Location */}
+                        <div className="mb-1.5">
+                          <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider truncate">
                             {room.location}
-                          </div>
-                          <div className="flex items-center gap-1 text-xs font-bold text-slate-800 shrink-0">
-                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                            <span>{room.rating}</span>
-                            <span className="text-slate-500 font-normal">({room.reviewCount})</span>
-                          </div>
+                          </span>
                         </div>
 
                         {/* Room Title */}
