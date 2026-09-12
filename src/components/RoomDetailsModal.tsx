@@ -160,6 +160,23 @@ export const RoomDetailsModal: React.FC = () => {
             </p>
           </div>
 
+          {/* Custom Specifications (if defined by admin) */}
+          {selectedRoom.customSpecs && selectedRoom.customSpecs.length > 0 && (
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2.5">
+                Bespoke Suite Specifications
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {selectedRoom.customSpecs.map((spec, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 text-xs">
+                    <span className="text-slate-500 font-semibold">{spec.key}:</span>
+                    <span className="text-slate-900 font-bold">{spec.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Room Amenities & Highlights */}
           <div>
             <h4 className="text-sm font-bold text-slate-900 mb-3">Suite Highlights & Amenities</h4>

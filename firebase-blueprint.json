@@ -126,9 +126,196 @@
         }
       },
       "required": ["userId", "roomId"]
+    },
+    "Room": {
+      "title": "Room",
+      "description": "Hotel room or suite listing managed by admin and browsed by guests",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Room title"
+        },
+        "subtitle": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Short catchy highlight"
+        },
+        "location": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Resort wing or villa pavilion location"
+        },
+        "category": {
+          "type": "string",
+          "description": "Room classification (preset or custom category key)"
+        },
+        "categoryLabel": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Display label for category"
+        },
+        "pricePerNight": {
+          "type": "number",
+          "description": "Base rate in USD per night"
+        },
+        "originalPricePerNight": {
+          "type": "number",
+          "description": "Original crossed-out rate"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Rating score"
+        },
+        "reviewCount": {
+          "type": "number",
+          "description": "Total reviews count"
+        },
+        "beds": {
+          "type": "number",
+          "description": "Bed count"
+        },
+        "baths": {
+          "type": "number",
+          "description": "Bath count"
+        },
+        "sqft": {
+          "type": "number",
+          "description": "Square footage"
+        },
+        "maxGuests": {
+          "type": "number",
+          "description": "Maximum guests accommodated"
+        },
+        "image": {
+          "type": "string",
+          "description": "Primary high-resolution photo URL"
+        },
+        "gallery": {
+          "type": "array",
+          "description": "Additional gallery URLs"
+        },
+        "features": {
+          "type": "array",
+          "description": "List of key amenities and perks"
+        },
+        "customSpecs": {
+          "type": "array",
+          "description": "Custom key-value specifications defined by admin"
+        },
+        "description": {
+          "type": "string",
+          "description": "Full room description"
+        },
+        "checkInTime": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "Standard check in time"
+        },
+        "checkOutTime": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "Standard check out time"
+        },
+        "payOnArrival": {
+          "type": "boolean",
+          "description": "Whether cash or card on arrival is permitted"
+        },
+        "available": {
+          "type": "boolean",
+          "description": "Room availability status"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        }
+      },
+      "required": ["title", "category", "pricePerNight", "location", "image"]
+    },
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "Guest concierge message or booking inquiry submitted from website",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Sender guest name"
+        },
+        "email": {
+          "type": "string",
+          "description": "Contact email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Optional contact phone"
+        },
+        "subject": {
+          "type": "string",
+          "description": "Inquiry subject"
+        },
+        "message": {
+          "type": "string",
+          "description": "Detailed question or message"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["unread", "read", "replied"],
+          "description": "Message handling status"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO creation timestamp"
+        }
+      },
+      "required": ["name", "email", "subject", "message"]
+    },
+    "GuestReview": {
+      "title": "GuestReview",
+      "description": "Authentic guest review and rating submitted by guests",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Guest name"
+        },
+        "email": {
+          "type": "string",
+          "description": "Optional guest email"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Score from 1 to 5 stars"
+        },
+        "stayedRoom": {
+          "type": "string",
+          "description": "Suite or villa stayed at"
+        },
+        "comment": {
+          "type": "string",
+          "description": "Review text"
+        },
+        "date": {
+          "type": "string",
+          "description": "Readable date of stay"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO creation timestamp"
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "Whether stay was verified"
+        }
+      },
+      "required": ["name", "rating", "stayedRoom", "comment"]
     }
   },
   "firestore": {
+    "/rooms/{roomId}": {
+      "schema": "Room",
+      "description": "Hotel rooms catalog managed by admin and viewed by guests"
+    },
     "/bookings/{bookingId}": {
       "schema": "Booking",
       "description": "Guest reservations with pay at check-in"
@@ -136,6 +323,14 @@
     "/favorites/{favoriteId}": {
       "schema": "Favorite",
       "description": "User saved favorites"
+    },
+    "/inquiries/{inquiryId}": {
+      "schema": "Inquiry",
+      "description": "Guest inquiries and concierge messages sent to admin"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "GuestReview",
+      "description": "Guest reviews and ratings displayed on user and admin panels"
     }
   }
 }

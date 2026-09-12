@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 
 export const Footer: React.FC = () => {
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -231,11 +232,9 @@ export const Footer: React.FC = () => {
         */}
         <div className="pt-8 border-t border-emerald-950/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
           <p>© {new Date().getFullYear()} Antix Hotel & Resort Global Hospitality Ltd. All rights reserved.</p>
-          <div className="flex items-center gap-6 text-[11px]">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-[11px]">
             <span className="hover:text-emerald-300 cursor-pointer transition-colors">Privacy Policy</span>
             <span className="hover:text-emerald-300 cursor-pointer transition-colors">Terms of Sanctuary Stay</span>
-            <span className="hover:text-emerald-300 cursor-pointer transition-colors">Pay at Desk Policy</span>
-            <span className="hover:text-emerald-300 cursor-pointer transition-colors">Accessibility</span>
           </div>
         </div>
 

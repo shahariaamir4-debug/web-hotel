@@ -32,9 +32,9 @@ service cloud.firestore {
              data.guestName.size() <= 100 &&
              data.guestPhone is string &&
              data.guestPhone.size() > 0 &&
-             data.guestPhone.size() <= 30 &&
+             data.guestPhone.size() <= 60 &&
              data.roomId is string &&
-             data.roomId.size() <= 50 &&
+             data.roomId.size() <= 128 &&
              data.checkIn is string &&
              data.checkIn.size() <= 30 &&
              data.checkOut is string &&
@@ -46,24 +46,80 @@ service cloud.firestore {
              data.bookingReference.size() <= 50;
     }
 
+    function isValidInquiry(data) {
+      return data.name is string &&
+             data.name.size() > 0 &&
+             data.name.size() <= 100 &&
+             data.email is string &&
+             data.email.size() > 0 &&
+             data.email.size() <= 120 &&
+             data.message is string &&
+             data.message.size() > 0 &&
+             data.message.size() <= 3000;
+    }
+
+    function isValidReview(data) {
+      return data.name is string &&
+             data.name.size() > 0 &&
+             data.name.size() <= 100 &&
+             data.rating is number &&
+             data.rating >= 1 &&
+             data.rating <= 5 &&
+             data.comment is string &&
+             data.comment.size() > 0 &&
+             data.comment.size() <= 2000;
+    }
+
+    function isValidRoom(data) {
+      return data.title is string &&
+             data.title.size() > 0 &&
+             data.title.size() <= 120 &&
+             data.category is string &&
+             data.pricePerNight is number &&
+             data.pricePerNight >= 0 &&
+             data.location is string &&
+             data.image is string;
+    }
+
     // Connectivity test collection
     match /test/{docId} {
       allow get: if true;
     }
 
+    // Rooms collection (Hotel catalog managed by Admin, viewed by Guests)
+    match /rooms/{roomId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isValidRoom(incoming());
+      allow update: if isValidRoom(incoming());
+      allow delete: if true;
+    }
+
     // Bookings collection
     match /bookings/{bookingId} {
-      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() &&
-                    incoming().userId == request.auth.uid &&
-                    isValidBooking(incoming());
-      allow update: if isSignedIn() &&
-                    resource.data.userId == request.auth.uid &&
-                    incoming().userId == request.auth.uid &&
-                    incoming().diff(existing()).affectedKeys().hasOnly(['status']) &&
-                    incoming().status in ['confirmed', 'cancelled'];
-      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if true;
+      allow list: if true;
+      allow create: if isValidBooking(incoming());
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    // Inquiries collection
+    match /inquiries/{inquiryId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isValidInquiry(incoming());
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    // Guest Reviews collection
+    match /reviews/{reviewId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isValidReview(incoming());
+      allow update: if true;
+      allow delete: if true;
     }
 
     // Favorites collection
@@ -73,7 +129,7 @@ service cloud.firestore {
       allow create: if isSignedIn() &&
                     incoming().userId == request.auth.uid &&
                     incoming().roomId is string &&
-                    incoming().roomId.size() <= 50;
+                    incoming().roomId.size() <= 128;
       allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
   }

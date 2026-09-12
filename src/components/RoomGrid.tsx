@@ -274,11 +274,11 @@ export const RoomGrid: React.FC = () => {
               {(isFilterActive || sortByPrice !== 'default') && (
                 <button
                   onClick={handleResetFilter}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-emerald-700 transition-colors bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl cursor-pointer"
-                  title="Reset price filter"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                  title="Reset filters"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reset</span>
+                  <span>Reset All</span>
                 </button>
               )}
             </div>
@@ -450,11 +450,16 @@ export const RoomGrid: React.FC = () => {
                     <div className="p-6 flex-1 flex flex-col justify-between">
                       
                       <div>
-                        {/* Location */}
-                        <div className="mb-1.5">
+                        {/* Location & Category Badge */}
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
                           <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider truncate">
                             {room.location}
                           </span>
+                          {room.categoryLabel && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wider shrink-0">
+                              {room.categoryLabel}
+                            </span>
+                          )}
                         </div>
 
                         {/* Room Title */}

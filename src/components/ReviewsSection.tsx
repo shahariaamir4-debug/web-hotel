@@ -1,10 +1,16 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Star, Sparkles, Quote } from 'lucide-react';
+import { Star, Sparkles, Quote, PenLine } from 'lucide-react';
+import { useHotel } from '../context/HotelContext';
 import { REVIEWS } from '../data/rooms';
 import { WaveDivider } from './WaveDivider';
 
 export const ReviewsSection: React.FC = () => {
+  const { guestReviews, setIsWriteReviewOpen } = useHotel();
+
+  // If live reviews exist in Firestore, show them; otherwise fallback to REVIEWS
+  const displayReviews = guestReviews && guestReviews.length > 0 ? guestReviews : REVIEWS;
+
   return (
     <div className="bg-white text-slate-900 pt-8 pb-0 overflow-hidden">
       <section id="reviews" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -15,7 +21,7 @@ export const ReviewsSection: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-70px" }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center max-w-xl mx-auto mb-14"
+          className="text-center max-w-xl mx-auto mb-12"
         >
           <div className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-emerald-800 bg-emerald-50 px-3.5 py-1 rounded-full border border-emerald-200 mb-3">
             <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
@@ -27,13 +33,23 @@ export const ReviewsSection: React.FC = () => {
           <p className="mt-2 text-sm sm:text-base text-slate-600">
             Over 25,000 travelers praise our architectural serenity and effortless pay-at-check-in hospitality.
           </p>
+
+          <div className="mt-6 flex items-center justify-center gap-3">
+            <button
+              onClick={() => setIsWriteReviewOpen(true)}
+              className="px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer hover:shadow-emerald-200"
+            >
+              <PenLine className="w-4 h-4" />
+              <span>Write a Guest Review</span>
+            </button>
+          </div>
         </motion.div>
 
         {/* Testimonials 3 Column Grid with Staggered Reveal Animation */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {REVIEWS.map((review, idx) => (
+          {displayReviews.slice(0, 6).map((review, idx) => (
             <motion.div
-              key={review.id}
+              key={review.id || idx}
               initial={{ opacity: 0, y: 35 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
@@ -49,7 +65,7 @@ export const ReviewsSection: React.FC = () => {
                       {review.name}
                     </h4>
                     <div className="flex items-center gap-0.5 mt-1">
-                      {[...Array(review.rating)].map((_, i) => (
+                      {[...Array(review.rating || 5)].map((_, i) => (
                         <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                       ))}
                     </div>
@@ -66,7 +82,7 @@ export const ReviewsSection: React.FC = () => {
               {/* Stay Verification Tag */}
               <div className="mt-6 pt-4 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500 font-medium">
                 <span className="text-emerald-700 font-semibold">{review.stayedRoom || 'Signature Suite'}</span>
-                <span>Verified Stay</span>
+                <span className="text-slate-400">{review.date || 'Verified Stay'}</span>
               </div>
             </motion.div>
           ))}
@@ -83,3 +99,4 @@ export const ReviewsSection: React.FC = () => {
     </div>
   );
 };
+

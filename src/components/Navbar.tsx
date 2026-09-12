@@ -8,7 +8,8 @@ import {
   LogOut, 
   Sparkles,
   Menu,
-  X
+  X,
+  ShieldCheck
 } from 'lucide-react';
 import { useHotel } from '../context/HotelContext';
 

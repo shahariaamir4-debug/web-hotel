@@ -1,4 +1,9 @@
-export type RoomCategory = 'all' | 'ocean' | 'deluxe' | 'presidential' | 'penthouse' | 'villa';
+export type RoomCategory = 'all' | 'ocean' | 'deluxe' | 'presidential' | 'penthouse' | 'villa' | string;
+
+export interface CustomSpec {
+  key: string;
+  value: string;
+}
 
 export interface Room {
   id: string;
@@ -20,10 +25,13 @@ export interface Room {
   badge?: string;
   badgeColor?: string;
   features: string[];
+  customSpecs?: CustomSpec[];
   description: string;
   checkInTime: string;
   checkOutTime: string;
   payOnArrival: boolean;
+  available?: boolean;
+  createdAt?: string;
 }
 
 export type BookingStatus = 'confirmed' | 'cancelled' | 'completed';
@@ -69,4 +77,16 @@ export interface Review {
   comment: string;
   stayedRoom: string;
   date: string;
+}
+
+export interface GuestReview {
+  id: string;
+  name: string;
+  email?: string;
+  rating: number;
+  stayedRoom: string;
+  comment: string;
+  date: string;
+  createdAt: string;
+  verified: boolean;
 }
